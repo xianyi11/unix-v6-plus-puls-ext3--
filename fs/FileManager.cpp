@@ -316,7 +316,24 @@ void FileManager::Read()
 	/* 直接调用Rdwr()函数即可 */
 	this->Rdwr(File::FREAD);
 }
+void FileManager::GetFileName()
+{
+	File* pFile;
+	User& u = Kernel::Instance().GetUser();
 
+	/* 根据Read()/Write()的系统调用参数fd获取打开文件控制块结构 */
+	pFile = u.u_ofiles.GetF(u.u_arg[0]);	/* fd */
+	if ( NULL == pFile )
+	{
+		/* 不存在该打开文件，GetF已经设置过出错码，所以这里不需要再设置了 */
+		/*	u.u_error = User::EBADF;	*/
+		return;
+	}
+	char* buf=( char *)u.u_arg[1];
+	Utility::StringCopy(pFile->namepath,buf);
+	u.u_ar0[User::EAX]=0;
+
+}
 void FileManager::Write()
 {
 	/* 直接调用Rdwr()函数即可 */
