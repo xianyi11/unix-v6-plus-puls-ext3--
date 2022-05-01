@@ -156,16 +156,6 @@ void FileManager::Open1(Inode* pInode, int mode, int trf)
 	/* 为打开或者创建文件的各种资源都已成功分配，函数返回 */
 	if ( u.u_error == 0 )
 	{
-		int fd = u.u_ar0[User::EAX];
-		int i = 0;
-		while(1)
-		{
-			char ch = u.u_dirp[i];
-			if(ch == '\0')
-				break;
-			this->m_OpenFileTable->m_File[fd].namepath[i] = u.u_dirp[i];
-			i++;
-		}
 		return;
 	}
 	else	/* 如果出错则释放资源 */
@@ -552,6 +542,17 @@ Inode* FileManager::NameI( char (*func)(), enum DirectorySearchMode mode )
 	User& u = Kernel::Instance().GetUser();
 	BufferManager& bufMgr = Kernel::Instance().GetBufferManager();
 
+	//给open File结构中的filename命名
+	int fd = u.u_ar0[User::EAX];
+	int i = 0;
+	while(1)
+	{
+		char ch = u.u_dirp[i];
+		if(ch == '\0')
+			break;
+		this->m_OpenFileTable->m_File[fd].namepath[i] = u.u_dirp[i];
+		i++;
+	}
 	/* 
 	 * 如果该路径是'/'开头的，从根目录开始搜索，
 	 * 否则从进程当前工作目录开始搜索。
