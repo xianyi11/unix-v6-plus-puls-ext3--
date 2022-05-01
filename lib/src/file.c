@@ -56,7 +56,14 @@ int read(int fd, char* buf, int nbytes)
 		return res;
 	return -1;
 }
-
+int MyGetFileName(int fd, char* buf)
+{
+	int res;
+	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(49),"b"(fd),"c"(buf));
+	if ( res >= 0 )
+		return res;
+	return -1;
+}
 /*
 写文件系统调用c库封装函数
 fd：打开进程打开文件号

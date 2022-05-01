@@ -33,7 +33,7 @@ void FileManager::Open()
 {
 	Inode* pInode;
 	User& u = Kernel::Instance().GetUser();
-
+	char*UDirp=u.u_dirp;
 	pInode = this->NameI(NextChar, FileManager::OPEN);	/* 0 = Open, not create */
 	/* 没有找到相应的Inode */
 	if ( NULL == pInode )
@@ -41,6 +41,23 @@ void FileManager::Open()
 		return;
 	}
 	this->Open1(pInode, u.u_arg[1], 0);
+	//给open File结构中的filename命名
+	int fd = u.u_ar0[User::EAX];
+	char*path=this->m_OpenFileTable->m_File[fd].namepath;
+	if(UDirp[0]=='/'){
+		Utility::StringCopy(UDirp,path);
+	}
+	else{
+		Utility::StringCopy(u.u_curdir,path);
+		int Len=Utility::StringLength(u.u_curdir);
+		// Diagnose::Write("len1:%d u_curdir:%s!\n", Len,path);
+		path[Len]='/';
+		Len++;
+		// Diagnose::Write("len2:%d u_curdir:%s!\n", Len,path);
+		Utility::StringCopy(UDirp,path+Len);
+	}
+	// Diagnose::Write("open1 %s!\n", path);
+
 }
 
 /*
@@ -157,19 +174,7 @@ void FileManager::Open1(Inode* pInode, int mode, int trf)
 	/* 为打开或者创建文件的各种资源都已成功分配，函数返回 */
 	if ( u.u_error == 0 )
 	{
-		//给open File结构中的filename命名
-		int fd = u.u_ar0[User::EAX];
-		int i = 0;
-		while(1)
-		{
-			char ch = u.u_dirp[i];
-			if(ch == '\0')
-				break;
-			this->m_OpenFileTable->m_File[fd].namepath[i] = u.u_dirp[i];
-			i++;
-		}
-		this->m_OpenFileTable->m_File[fd].namepath[i] =0;
-		Diagnose::Write("open1 %s!\n", this->m_OpenFileTable->m_File[fd].namepath);
+		
 		return;
 	}
 	else	/* 如果出错则释放资源 */
@@ -577,7 +582,7 @@ Inode* FileManager::NameI( char (*func)(), enum DirectorySearchMode mode )
 	 * 如果该路径是'/'开头的，从根目录开始搜索，
 	 * 否则从进程当前工作目录开始搜索。
 	 */
-	Diagnose::Write("namei %s!\n", u.u_dirp);
+	// Diagnose::Write("u_curdir%s!\n", u.u_curdir);
 	pInode = u.u_cdir;
 	if ( '/' == (curchar = (*func)()) )
 	{

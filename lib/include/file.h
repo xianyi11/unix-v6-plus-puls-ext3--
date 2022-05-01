@@ -26,6 +26,8 @@ int write(int fd, char* buf, int nbytes);
 
 int read(int fd, char* buf, int nbytes);
 
+int MyGetFileName(int fd, char* buf);
+
 int mknod(char* pathname,unsigned int mode, int dev);
 
 int link(char* pathname,char* newPathname);
