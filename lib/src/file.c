@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "sys.h"
 #include "string.h"
 #include "file.h"
 
@@ -44,7 +45,18 @@ int creat(char* pathname, unsigned int mode)
 
 	struct MetaLog metalog;
 	metalog.start = START;
-	sprintf(metalog.filename1, "%s", pathname);
+	// absolute path
+	if(pathname[0] == '/')
+		sprintf(metalog.filename1, "%s", pathname);
+	// relative path
+	else
+	{
+		getPath(metalog.filename1);
+		int pwd_len = strlen(metalog.filename1);
+		if(pwd_len != 1)
+			metalog.filename1[pwd_len++] = '/';
+		sprintf(metalog.filename1 + pwd_len, "%s", pathname);
+	}
 	metalog.filename2[0] = '\0';
 	sprintf(metalog.operation, "creat");
 	metalog.startpos = 0;
@@ -345,10 +357,68 @@ newPathname：新的文件路径指针
 */
 int link(char* pathname,char* newPathname)
 {
+	printf("linking - %s - %s\n", pathname, newPathname);
 	int res;
+	int metafile = open("/meta.log", 0x3);
+	if(metafile == -1)
+	{
+		creat("/meta.log", 0x1ff);
+		metafile = open("/meta.log", 0x3);
+	}
+	struct st_inode metafile_state;
+	fstat(metafile, &metafile_state);
+	seek(metafile, metafile_state.st_size, 0);
+
+	struct MetaLog metalog;
+	metalog.start = START;
+	// filename1
+	if(pathname[0] == '/')
+		sprintf(metalog.filename1, "%s", pathname);
+	else
+	{
+		getPath(metalog.filename1);
+		int pwd_len = strlen(metalog.filename1);
+		if(pwd_len != 1)
+			metalog.filename1[pwd_len++] = '/';
+		sprintf(metalog.filename1 + pwd_len, "%s", pathname);
+	}
+
+	// filename2
+	if(newPathname[0] == '/')
+		sprintf(metalog.filename2, "%s", newPathname);
+	else
+	{
+		getPath(metalog.filename2);
+		int pwd_len = strlen(metalog.filename2);
+		if(pwd_len != 1)
+			metalog.filename2[pwd_len++] = '/';
+		sprintf(metalog.filename2 + pwd_len, "%s", newPathname);
+	}
+	sprintf(metalog.operation, "link");
+	metalog.startpos = 0;
+	metalog.endpos = 0;
+	metalog.mode = 0;
+	metalog.end = END;
+	metalog.checkpoint = CHECKPOINT;
+
+	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog) - sizeof(int)));
+//	printf("DEBUG!!! 3");
+	if(res < 0)
+	{
+		close(metafile);
+		return -1;
+	}
+
 	__asm__ volatile ("int $0x80":"=a"(res):"a"(9),"b"(pathname),"c"(newPathname));
 	if ( res >= 0 )
+	{
+		// checkpoint
+		int chk_res;
+		__asm__ __volatile__ ("int $0x80":"=a"(chk_res):"a"(4),"b"(metafile),"c"((char*)(&metalog) + (sizeof(struct MetaLog) - sizeof(int))),"d"(sizeof(int)));
+		close(metafile);
 		return res;
+	}
+	close(metafile);
 	return -1;
 }
 /*
@@ -358,10 +428,58 @@ pathname：要解除索引的文件路径
 */
 int unlink(char* pathname)
 {
+	printf("unlinking %s\n", pathname);
 	int res;
+	int metafile = open("/meta.log", 0x3);
+	if(metafile == -1)
+	{
+		creat("/meta.log", 0x1ff);
+		metafile = open("/meta.log", 0x3);
+	}
+	struct st_inode metafile_state;
+	fstat(metafile, &metafile_state);
+	seek(metafile, metafile_state.st_size, 0);
+
+	struct MetaLog metalog;
+	metalog.start = START;
+	// filename1
+	if(pathname[0] == '/')
+		sprintf(metalog.filename1, "%s", pathname);
+	else
+	{
+		getPath(metalog.filename1);
+		int pwd_len = strlen(metalog.filename1);
+		if(pwd_len != 1)
+			metalog.filename1[pwd_len++] = '/';
+		sprintf(metalog.filename1 + pwd_len, "%s", pathname);
+	}
+
+	metalog.filename2[0] = '\0';
+	sprintf(metalog.operation, "unlink");
+	metalog.startpos = 0;
+	metalog.endpos = 0;
+	metalog.mode = 0;
+	metalog.end = END;
+	metalog.checkpoint = CHECKPOINT;
+
+	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog) - sizeof(int)));
+//	printf("DEBUG!!! 3");
+	if(res < 0)
+	{
+		close(metafile);
+		return -1;
+	}
+
 	__asm__ volatile ("int $0x80":"=a"(res):"a"(10),"b"(pathname));
 	if ( res >= 0 )
+	{
+		// checkpoint
+		int chk_res;
+		__asm__ __volatile__ ("int $0x80":"=a"(chk_res):"a"(4),"b"(metafile),"c"((char*)(&metalog) + (sizeof(struct MetaLog) - sizeof(int))),"d"(sizeof(int)));
+		close(metafile);
 		return res;
+	}
+	close(metafile);
 	return -1;
 }
 /*
