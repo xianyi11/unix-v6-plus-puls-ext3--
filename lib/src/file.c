@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "sys.h"
+#include "string.h"
 #include "file.h"
 
 #define START 1296744718
@@ -14,10 +16,73 @@ mode：创建模式，需指定文件主，同组用户，其他用户的工作方式
 */
 int creat(char* pathname, unsigned int mode)
 {
+	if(strcmp(pathname, "/meta.log") == 0 || strcmp(pathname, "/data.log") == 0)
+	{
+		printf("creating %s\n", pathname);
+		int res;
+		// first part
+		__asm__ __volatile__ ( "int $0x80":"=a"(res):"a"(8),"b"(pathname),"c"(mode));
+		if ( res >= 0 )
+		{
+			// checkpoint
+			return res;
+		}
+		return -1;
+	}
+	printf("creating %s\n", pathname);
 	int res;
+	// first part
+	// open meta.log
+	int metafile = open("/meta.log", 0x3);
+	if(metafile == -1)
+	{
+		creat("/meta.log", 0x1ff);
+		metafile = open("/meta.log", 0x3);
+	}
+	struct st_inode metafile_state;
+	fstat(metafile, &metafile_state);
+	seek(metafile, metafile_state.st_size, 0);
+
+	struct MetaLog metalog;
+	metalog.start = START;
+	// absolute path
+	if(pathname[0] == '/')
+		sprintf(metalog.filename1, "%s", pathname);
+	// relative path
+	else
+	{
+		getPath(metalog.filename1);
+		int pwd_len = strlen(metalog.filename1);
+		if(pwd_len != 1)
+			metalog.filename1[pwd_len++] = '/';
+		sprintf(metalog.filename1 + pwd_len, "%s", pathname);
+	}
+	metalog.filename2[0] = '\0';
+	sprintf(metalog.operation, "creat");
+	metalog.startpos = 0;
+	metalog.endpos = 0;
+	metalog.mode = mode;
+	metalog.end = END;
+	metalog.checkpoint = CHECKPOINT;
+
+	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog) - sizeof(int)));
+//	printf("DEBUG!!! 3");
+	if(res < 0)
+	{
+		close(metafile);
+		return -1;
+	}
+
 	__asm__ __volatile__ ( "int $0x80":"=a"(res):"a"(8),"b"(pathname),"c"(mode));
 	if ( res >= 0 )
+	{
+		// checkpoint
+		int chk_res;
+		__asm__ __volatile__ ("int $0x80":"=a"(chk_res):"a"(4),"b"(metafile),"c"((char*)(&metalog) + (sizeof(struct MetaLog) - sizeof(int))),"d"(sizeof(int)));
+		close(metafile);
 		return res;
+	}
+	close(metafile);
 	return -1;
 }
 
@@ -64,13 +129,13 @@ int read(int fd, char* buf, int nbytes)
 }
 int MyGetFileName(int fd, char* buf)
 {
-	printf("MYGETFILENAME!!!!!!BEFORE\n");
+//	printf("MYGETFILENAME!!!!!!BEFORE\n");
 	int res;
 	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(49),"b"(fd),"c"(buf));
-	printf("MYGETFILENAME!!!!!!AFTER\n");
+//	printf("MYGETFILENAME!!!!!!AFTER\n");
 	if ( res >= 0 )
 	{
-		printf("RES!!!!Buf: %s\n", buf);
+//		printf("RES!!!!Buf: %s\n", buf);
 		return res;
 	}
 	return -1;
@@ -120,54 +185,66 @@ int write(int fd, char* buf, int nbytes)
 	struct MetaLog metalog;
 
 	///////
-	printf("IN WRITE, BEFORE MYGETFILENAME!!!!\n");
-	MyGetFileName(fd, metalog.filename);
-	printf("IN WRITE, AFTER MYGETFILENAME!!!!\n");
-	sprintf(metalog.start, "STTT");
-	sprintf(metalog.operation, "writewritewritee");
-	sprintf(metalog.end, "ENDD");
-	sprintf(metalog.checkpoint, "CHKK");
-	sprintf(metalog.startpos, "%d", datafile_state.st_size);
-	sprintf(metalog.endpos, "%d", datafile_state.st_size + nbytes); //////////
+
+	// sprintf(metalog.start, "STT");
+	sprintf(metalog.operation, "write");
+	// sprintf(metalog.end, "END");
+	// sprintf(metalog.checkpoint, "CHK");
+	// sprintf(metalog.startpos, "%d", datafile_state.st_size);
+	// sprintf(metalog.endpos, "%d", datafile_state.st_size + nbytes); //////////
+	// printf("IN WRITE, BEFORE MYGETFILENAME!!!! %s \n",metalog.filename);
+	// MyGetFileName(fd, metalog.filename);
+	// printf("IN WRITE, AFTER MYGETFILENAME!!!!%s \n",metalog.filename);
 	///////
 
+	int startpos, endpos;
+	startpos = datafile_state.st_size;
 	// write datafile
-//	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(datafile),"c"(buf),"d"(nbytes));
-//	if(res < 0)
-//	{
-//		close(metafile);
-//		close(datafile);
-//		return -1;
-//	}
-//	int endpos = startpos + res;
-	// write data into datafile
-
-//	metalog.start = START;
-//	metalog.end = END;
-//	metalog.checkpoint = CHECKPOINT;
-//	MyGetFileName(fd, metalog.filename);
-//	metalog.startpos = startpos;
-//	metalog.endpos = endpos;
-
-	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog)));
-//	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog) - sizeof(int)));
+	char *buf_backup = buf;
+	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(datafile),"c"(buf_backup),"d"(nbytes));
+//	printf("DEBUG!!! 1");
 	if(res < 0)
 	{
 		close(metafile);
 		close(datafile);
 		return -1;
 	}
+//	printf("DEBUG!!! 2");
+	endpos = startpos + res;
+	// write data into datafile
 
+	metalog.start = START;
+	metalog.end = END;
+	metalog.checkpoint = CHECKPOINT;
+	MyGetFileName(fd, metalog.filename1);
+	metalog.filename2[0] = '\0';
+	metalog.startpos = startpos;
+	metalog.endpos = endpos;
+	metalog.mode = 0;
+
+//	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog)));
+	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog) - sizeof(int)));
+//	printf("DEBUG!!! 3");
+	if(res < 0)
+	{
+		close(metafile);
+		close(datafile);
+		return -1;
+	}
+//	printf("DEBUG!!! 4");
 	// checkpointing
 	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(fd),"c"(buf),"d"(nbytes));
+//	printf("DEBUG!!! 5");
 	if ( res >= 0 )
 	{
+		int chk_res;
 		// 加检查点
-//		__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)(&metalog) + (sizeof(struct MetaLog) - sizeof(int))),"d"(sizeof(int)));
+		__asm__ __volatile__ ("int $0x80":"=a"(chk_res):"a"(4),"b"(metafile),"c"((char*)(&metalog) + (sizeof(struct MetaLog) - sizeof(int))),"d"(sizeof(int)));
 		close(metafile);
 		close(datafile);
 		return res;
 	}
+//	printf("DEBUG!!! 6");
 	close(metafile);
 	close(datafile);
 	return -1;
@@ -280,10 +357,68 @@ newPathname：新的文件路径指针
 */
 int link(char* pathname,char* newPathname)
 {
+	printf("linking - %s - %s\n", pathname, newPathname);
 	int res;
+	int metafile = open("/meta.log", 0x3);
+	if(metafile == -1)
+	{
+		creat("/meta.log", 0x1ff);
+		metafile = open("/meta.log", 0x3);
+	}
+	struct st_inode metafile_state;
+	fstat(metafile, &metafile_state);
+	seek(metafile, metafile_state.st_size, 0);
+
+	struct MetaLog metalog;
+	metalog.start = START;
+	// filename1
+	if(pathname[0] == '/')
+		sprintf(metalog.filename1, "%s", pathname);
+	else
+	{
+		getPath(metalog.filename1);
+		int pwd_len = strlen(metalog.filename1);
+		if(pwd_len != 1)
+			metalog.filename1[pwd_len++] = '/';
+		sprintf(metalog.filename1 + pwd_len, "%s", pathname);
+	}
+
+	// filename2
+	if(newPathname[0] == '/')
+		sprintf(metalog.filename2, "%s", newPathname);
+	else
+	{
+		getPath(metalog.filename2);
+		int pwd_len = strlen(metalog.filename2);
+		if(pwd_len != 1)
+			metalog.filename2[pwd_len++] = '/';
+		sprintf(metalog.filename2 + pwd_len, "%s", newPathname);
+	}
+	sprintf(metalog.operation, "link");
+	metalog.startpos = 0;
+	metalog.endpos = 0;
+	metalog.mode = 0;
+	metalog.end = END;
+	metalog.checkpoint = CHECKPOINT;
+
+	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog) - sizeof(int)));
+//	printf("DEBUG!!! 3");
+	if(res < 0)
+	{
+		close(metafile);
+		return -1;
+	}
+
 	__asm__ volatile ("int $0x80":"=a"(res):"a"(9),"b"(pathname),"c"(newPathname));
 	if ( res >= 0 )
+	{
+		// checkpoint
+		int chk_res;
+		__asm__ __volatile__ ("int $0x80":"=a"(chk_res):"a"(4),"b"(metafile),"c"((char*)(&metalog) + (sizeof(struct MetaLog) - sizeof(int))),"d"(sizeof(int)));
+		close(metafile);
 		return res;
+	}
+	close(metafile);
 	return -1;
 }
 /*
@@ -293,10 +428,58 @@ pathname：要解除索引的文件路径
 */
 int unlink(char* pathname)
 {
+	printf("unlinking %s\n", pathname);
 	int res;
+	int metafile = open("/meta.log", 0x3);
+	if(metafile == -1)
+	{
+		creat("/meta.log", 0x1ff);
+		metafile = open("/meta.log", 0x3);
+	}
+	struct st_inode metafile_state;
+	fstat(metafile, &metafile_state);
+	seek(metafile, metafile_state.st_size, 0);
+
+	struct MetaLog metalog;
+	metalog.start = START;
+	// filename1
+	if(pathname[0] == '/')
+		sprintf(metalog.filename1, "%s", pathname);
+	else
+	{
+		getPath(metalog.filename1);
+		int pwd_len = strlen(metalog.filename1);
+		if(pwd_len != 1)
+			metalog.filename1[pwd_len++] = '/';
+		sprintf(metalog.filename1 + pwd_len, "%s", pathname);
+	}
+
+	metalog.filename2[0] = '\0';
+	sprintf(metalog.operation, "unlink");
+	metalog.startpos = 0;
+	metalog.endpos = 0;
+	metalog.mode = 0;
+	metalog.end = END;
+	metalog.checkpoint = CHECKPOINT;
+
+	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog) - sizeof(int)));
+//	printf("DEBUG!!! 3");
+	if(res < 0)
+	{
+		close(metafile);
+		return -1;
+	}
+
 	__asm__ volatile ("int $0x80":"=a"(res):"a"(10),"b"(pathname));
 	if ( res >= 0 )
+	{
+		// checkpoint
+		int chk_res;
+		__asm__ __volatile__ ("int $0x80":"=a"(chk_res):"a"(4),"b"(metafile),"c"((char*)(&metalog) + (sizeof(struct MetaLog) - sizeof(int))),"d"(sizeof(int)));
+		close(metafile);
 		return res;
+	}
+	close(metafile);
 	return -1;
 }
 /*
