@@ -340,6 +340,7 @@ void FileManager::GetFileName()
 	}
 	char* buf=( char *)u.u_arg[1];
 	Utility::StringCopy(pFile->namepath,buf);
+	Diagnose::Write("buf: %s\n", buf);
 	u.u_ar0[User::EAX]=0;
 
 }

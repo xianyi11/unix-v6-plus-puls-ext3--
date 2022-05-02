@@ -42,7 +42,8 @@ SHELL_OBJS =$(TARGET)\cat.exe	\
 			$(TARGET)\malloc.exe \
 			$(TARGET)\testSTDOUT.exe \
 			$(TARGET)\fork.exe \
-			$(TARGET)\TestGetFileName.exe
+			$(TARGET)\TestGetFileName.exe \
+			$(TARGET)\mycat.exe
 			
 #$(TARGET)\performance.exe
 			
@@ -133,6 +134,9 @@ $(TARGET)\testSTDOUT.exe :	testSTDOUT.c
 $(TARGET)\TestGetFileName.exe :	TestGetFileName.c
 	$(CC) $(CFLAGS) -I"$(INCLUDE)" -I"$(LIB_INCLUDE)"  $< -e _main1 $(V6++LIB) -o $@
 	copy $(TARGET)\TestGetFileName.exe $(MAKEIMAGEPATH)\$(BIN)\TestGetFileName
+$(TARGET)\mycat.exe :	mycat.c
+	$(CC) $(CFLAGS) -I"$(INCLUDE)" -I"$(LIB_INCLUDE)"  $< -e _main1 $(V6++LIB) -o $@
+	copy $(TARGET)\mycat.exe $(MAKEIMAGEPATH)\$(BIN)\mycat
 clean:
 	del $(TARGET)\*.*
 	del $(MAKEIMAGEPATH)\$(BIN)\*.*
