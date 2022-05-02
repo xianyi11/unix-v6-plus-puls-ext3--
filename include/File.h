@@ -32,7 +32,7 @@ public:
 	int		f_count;			/* 当前引用该文件控制块的进程数量 */
 	Inode*	f_inode;			/* 指向打开文件的内存Inode指针 */
 	int		f_offset;			/* 文件读写位置指针 */
-	char    namepath[28];       /* 文件名*/
+	char    namepath[128];       /* 文件名*/
 };
 
 

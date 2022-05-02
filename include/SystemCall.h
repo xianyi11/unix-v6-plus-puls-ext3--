@@ -221,6 +221,7 @@ private:
 	static int Sys_Ssig();
 	
 	/*	49 ~ 63 = nosys	count = 0	*/	
+	static int Sys_GetFileName();
 
 private:
 	/*系统调用入口表的声明*/

@@ -60,7 +60,7 @@ SystemCallTableEntry SystemCall::m_SystemEntranceTable[SYSTEM_CALL_NUM] =
 	{ 1, &Sys_Setgid},				/* 46 = setgid	*/
 	{ 0, &Sys_Getgid},				/* 47 = getgid	*/
 	{ 2, &Sys_Ssig	},				/* 48 = sig	*/
-	{ 0, &Sys_Nosys	},				/* 49 = nosys	*/
+	{ 2, &Sys_GetFileName	},		/* 49 = Sys_GetFileName	*/
 	{ 0, &Sys_Nosys	},				/* 50 = nosys	*/
 	{ 0, &Sys_Nosys	},				/* 51 = nosys	*/
 	{ 0, &Sys_Nosys	},				/* 52 = nosys	*/
@@ -275,7 +275,13 @@ int SystemCall::Sys_Read()
 
 	return 0;	/* GCC likes it ! */
 }
-
+/*	49 = GetFileName	count = 2	*/
+int SystemCall::Sys_GetFileName()
+{
+	FileManager& fileMgr = Kernel::Instance().GetFileManager();
+	fileMgr.GetFileName();
+	return 0;	/* GCC likes it ! */
+}
 /*	4 = write	count = 2	*/
 int SystemCall::Sys_Write()
 {
@@ -720,3 +726,4 @@ int SystemCall::Sys_Ssig()
 
 	return 0;	/* GCC likes it ! */
 }
+

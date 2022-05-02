@@ -82,6 +82,7 @@ public:
 	 * @comment Read()系统调用处理过程
 	 */
 	void Read();
+	void GetFileName();
 
 	/* 
 	 * @comment Write()系统调用处理过程
