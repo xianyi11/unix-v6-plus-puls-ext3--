@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "string.h"
 #include "file.h"
 
 #define START 1296744718
@@ -14,16 +15,62 @@ mode：创建模式，需指定文件主，同组用户，其他用户的工作方式
 */
 int creat(char* pathname, unsigned int mode)
 {
+	if(strcmp(pathname, "/meta.log") == 0 || strcmp(pathname, "/data.log") == 0)
+	{
+		printf("creating %s\n", pathname);
+		int res;
+		// first part
+		__asm__ __volatile__ ( "int $0x80":"=a"(res):"a"(8),"b"(pathname),"c"(mode));
+		if ( res >= 0 )
+		{
+			// checkpoint
+			return res;
+		}
+		return -1;
+	}
+	printf("creating %s\n", pathname);
 	int res;
 	// first part
+	// open meta.log
+	int metafile = open("/meta.log", 0x3);
+	if(metafile == -1)
+	{
+		creat("/meta.log", 0x1ff);
+		metafile = open("/meta.log", 0x3);
+	}
+	struct st_inode metafile_state;
+	fstat(metafile, &metafile_state);
+	seek(metafile, metafile_state.st_size, 0);
 
+	struct MetaLog metalog;
+	metalog.start = START;
+	sprintf(metalog.filename1, "%s", pathname);
+	metalog.filename2[0] = '\0';
+	sprintf(metalog.operation, "creat");
+	metalog.startpos = 0;
+	metalog.endpos = 0;
+	metalog.mode = mode;
+	metalog.end = END;
+	metalog.checkpoint = CHECKPOINT;
+
+	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog) - sizeof(int)));
+//	printf("DEBUG!!! 3");
+	if(res < 0)
+	{
+		close(metafile);
+		return -1;
+	}
 
 	__asm__ __volatile__ ( "int $0x80":"=a"(res):"a"(8),"b"(pathname),"c"(mode));
 	if ( res >= 0 )
 	{
 		// checkpoint
+		int chk_res;
+		__asm__ __volatile__ ("int $0x80":"=a"(chk_res):"a"(4),"b"(metafile),"c"((char*)(&metalog) + (sizeof(struct MetaLog) - sizeof(int))),"d"(sizeof(int)));
+		close(metafile);
 		return res;
 	}
+	close(metafile);
 	return -1;
 }
 
@@ -70,13 +117,13 @@ int read(int fd, char* buf, int nbytes)
 }
 int MyGetFileName(int fd, char* buf)
 {
-	printf("MYGETFILENAME!!!!!!BEFORE\n");
+//	printf("MYGETFILENAME!!!!!!BEFORE\n");
 	int res;
 	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(49),"b"(fd),"c"(buf));
-	printf("MYGETFILENAME!!!!!!AFTER\n");
+//	printf("MYGETFILENAME!!!!!!AFTER\n");
 	if ( res >= 0 )
 	{
-		printf("RES!!!!Buf: %s\n", buf);
+//		printf("RES!!!!Buf: %s\n", buf);
 		return res;
 	}
 	return -1;

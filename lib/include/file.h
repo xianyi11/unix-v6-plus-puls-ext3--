@@ -11,7 +11,7 @@ struct MetaLog
     char operation[16];   // write, creat, unlink, link 16
     int startpos; //
     int endpos; //
-    int mode;//
+    unsigned int mode;//
     // char startpos[8];
     // char endpos[8];
     int end;              // 定义一个特殊的END，1437806543 4
