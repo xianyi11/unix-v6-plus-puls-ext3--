@@ -1,4 +1,10 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "file.h"
+
+#define START 1296744718
+#define END 1437806543
+#define CHECKPOINT 317668571
 
 /*
 创建文件系统调用c库封装函数
@@ -64,6 +70,7 @@ int MyGetFileName(int fd, char* buf)
 		return res;
 	return -1;
 }
+
 /*
 写文件系统调用c库封装函数
 fd：打开进程打开文件号
@@ -73,10 +80,78 @@ nbytes：写入字节数
 */
 int write(int fd, char* buf, int nbytes)
 {
+	if(fd == 0 || fd == 1)
+	{
+		int res;
+		__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(fd),"c"(buf),"d"(nbytes));
+		if ( res >= 0 )
+			return res;
+		return -1;
+	}
 	int res;
+	// 写入日志、日志提交
+	// open log
+	int metafile = open("/meta.log", 0x3);
+	if(metafile == -1)
+	{
+		creat("/meta.log", 0x1ff);
+		metafile = open("/meta.log", 0x3);
+	}
+	// seek metafile
+	seek(metafile, 0, 2); // move file ptr to end of file
+	int datafile = open("/data.log", 0x3);
+	if(datafile == -1)
+	{
+		creat("/data.log", 0x1ff);
+		datafile = open("/data.log", 0x3);
+	}
+	// seek datafile
+	seek(datafile, 0, 2);
+
+	// write datafile
+	struct st_inode datafile_state;
+	fstat(datafile, &datafile_state);
+	int startpos = datafile_state.st_size;
+//	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(datafile),"c"(buf),"d"(nbytes));
+//	if(res < 0)
+//	{
+//		close(metafile);
+//		close(datafile);
+//		return -1;
+//	}
+	int endpos = startpos + res;
+	// write data into datafile
+
+	struct MetaLog metalog;
+//	metalog.start = START;
+//	metalog.end = END;
+//	metalog.checkpoint = CHECKPOINT;
+//	MyGetFileName(fd, metalog.filename);
+	sprintf(metalog.operation, "write");
+//	metalog.startpos = startpos;
+//	metalog.endpos = endpos;
+
+	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog)));
+//	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog) - sizeof(int)));
+	if(res < 0)
+	{
+		close(metafile);
+		close(datafile);
+		return -1;
+	}
+
+	// checkpointing
 	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(fd),"c"(buf),"d"(nbytes));
 	if ( res >= 0 )
+	{
+		// 加检查点
+//		__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)(&metalog) + (sizeof(struct MetaLog) - sizeof(int))),"d"(sizeof(int)));
+		close(metafile);
+		close(datafile);
 		return res;
+	}
+	close(metafile);
+	close(datafile);
 	return -1;
 }
 
