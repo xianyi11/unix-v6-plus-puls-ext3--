@@ -1,7 +1,7 @@
 #ifndef FILE_H
 #define FILE_H
 
-struct MetaLog
+struct struct st_inode
 {
    int start;            // 定义一个特殊的START，1296744718 4
 	// char start[4];
