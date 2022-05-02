@@ -4,10 +4,6 @@
 #include "string.h"
 #include "file.h"
 
-#define START 1296744718
-#define END 1437806543
-#define CHECKPOINT 317668571
-
 /*
 创建文件系统调用c库封装函数
 name：创建路径的地址

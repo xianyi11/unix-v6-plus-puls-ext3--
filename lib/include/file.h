@@ -1,6 +1,10 @@
 #ifndef FILE_H
 #define FILE_H
 
+#define START 1296744718
+#define END 1437806543
+#define CHECKPOINT 317668571
+
 struct MetaLog
 {
    int start;            // 定义一个特殊的START，1296744718 4

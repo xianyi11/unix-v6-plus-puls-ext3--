@@ -39,7 +39,8 @@ void CheckAndRecovery()
 			//write
 			if(strcmp( "write", metalog.operation )==0){
 				int DataLen = metalog.endpos - metalog.startpos;//获得长度
-				char *buf = (char *)malloc(DataLen + 5);//?
+//				char *buf = (char *)malloc(DataLen + 5);//? ///////////////
+				char buf[128];
 				int datalogfd = open("/data.log",0x3);
 				seek(datalogfd,metalog.startpos,0);
 				read(datalogfd,buf,DataLen);
@@ -48,7 +49,7 @@ void CheckAndRecovery()
 				int res = 0;
 				while(res_all < DataLen)
 				{
-					__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(fd),"c"(buf+res_all),"d"(DataLen-res_all));
+					__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(fd),"c"(buf+res_all),"d"(DataLen-res_all));///////
 					res_all+=res;
 				}
 				//判断返回值
