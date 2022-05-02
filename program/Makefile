@@ -43,8 +43,8 @@ SHELL_OBJS =$(TARGET)\cat.exe	\
 			$(TARGET)\testSTDOUT.exe \
 			$(TARGET)\fork.exe \
 			$(TARGET)\TestGetFileName.exe \
-			$(TARGET)\mycat.exe
-			
+			$(TARGET)\mycat.exe \
+			$(TARGET)\pwd.exe
 #$(TARGET)\performance.exe
 			
 #all	:	build
@@ -137,6 +137,9 @@ $(TARGET)\TestGetFileName.exe :	TestGetFileName.c
 $(TARGET)\mycat.exe :	mycat.c
 	$(CC) $(CFLAGS) -I"$(INCLUDE)" -I"$(LIB_INCLUDE)"  $< -e _main1 $(V6++LIB) -o $@
 	copy $(TARGET)\mycat.exe $(MAKEIMAGEPATH)\$(BIN)\mycat
+$(TARGET)\pwd.exe :	pwd.c
+	$(CC) $(CFLAGS) -I"$(INCLUDE)" -I"$(LIB_INCLUDE)"  $< -e _main1 $(V6++LIB) -o $@
+	copy $(TARGET)\pwd.exe $(MAKEIMAGEPATH)\$(BIN)\pwd
 clean:
 	del $(TARGET)\*.*
 	del $(MAKEIMAGEPATH)\$(BIN)\*.*
