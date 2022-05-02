@@ -120,15 +120,16 @@ int write(int fd, char* buf, int nbytes)
 	struct MetaLog metalog;
 
 	///////
-	printf("IN WRITE, BEFORE MYGETFILENAME!!!!\n");
-	MyGetFileName(fd, metalog.filename);
-	printf("IN WRITE, AFTER MYGETFILENAME!!!!\n");
-	sprintf(metalog.start, "STTT");
-	sprintf(metalog.operation, "writewritewritee");
-	sprintf(metalog.end, "ENDD");
-	sprintf(metalog.checkpoint, "CHKK");
-	sprintf(metalog.startpos, "%d", datafile_state.st_size);
-	sprintf(metalog.endpos, "%d", datafile_state.st_size + nbytes); //////////
+
+	// sprintf(metalog.start, "STT");
+	sprintf(metalog.operation, "write");
+	// sprintf(metalog.end, "END");
+	// sprintf(metalog.checkpoint, "CHK");
+	// sprintf(metalog.startpos, "%d", datafile_state.st_size);
+	// sprintf(metalog.endpos, "%d", datafile_state.st_size + nbytes); //////////
+	// printf("IN WRITE, BEFORE MYGETFILENAME!!!! %s \n",metalog.filename);
+	// MyGetFileName(fd, metalog.filename);
+	// printf("IN WRITE, AFTER MYGETFILENAME!!!!%s \n",metalog.filename);
 	///////
 
 	// write datafile
@@ -139,15 +140,15 @@ int write(int fd, char* buf, int nbytes)
 //		close(datafile);
 //		return -1;
 //	}
-//	int endpos = startpos + res;
+	int endpos = startpos + res;
 	// write data into datafile
 
-//	metalog.start = START;
-//	metalog.end = END;
-//	metalog.checkpoint = CHECKPOINT;
-//	MyGetFileName(fd, metalog.filename);
-//	metalog.startpos = startpos;
-//	metalog.endpos = endpos;
+	metalog.start = START;
+	metalog.end = END;
+	metalog.checkpoint = CHECKPOINT;
+	MyGetFileName(fd, metalog.filename);
+	metalog.startpos = startpos;
+	metalog.endpos = endpos;
 
 	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog)));
 //	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog) - sizeof(int)));

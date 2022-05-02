@@ -71,6 +71,8 @@ void FileManager::Creat()
 	unsigned int newACCMode = u.u_arg[1] & (Inode::IRWXU|Inode::IRWXG|Inode::IRWXO);
 
 	/* 搜索目录的模式为1，表示创建；若父目录不可写，出错返回 */
+	char*UDirp=u.u_dirp;
+
 	pInode = this->NameI(NextChar, FileManager::CREATE);
 	/* 没有找到相应的Inode，或NameI出错 */
 	if ( NULL == pInode )
@@ -101,6 +103,21 @@ void FileManager::Creat()
 		 * 现在的实现：creat指定的RWX比特有效 */
 		this->Open1(pInode, File::FWRITE, 1);
 		pInode->i_mode |= newACCMode;
+	}
+	//给open File结构中的filename命名
+	int fd = u.u_ar0[User::EAX];
+	char*path=this->m_OpenFileTable->m_File[fd].namepath;
+	if(UDirp[0]=='/'){
+		Utility::StringCopy(UDirp,path);
+	}
+	else{
+		Utility::StringCopy(u.u_curdir,path);
+		int Len=Utility::StringLength(u.u_curdir);
+		// Diagnose::Write("len1:%d u_curdir:%s!\n", Len,path);
+		path[Len]='/';
+		Len++;
+		// Diagnose::Write("len2:%d u_curdir:%s!\n", Len,path);
+		Utility::StringCopy(UDirp,path+Len);
 	}
 }
 
