@@ -51,8 +51,8 @@ void FileManager::Open()
 		Utility::StringCopy(u.u_curdir,path);
 		int Len=Utility::StringLength(u.u_curdir);
 		// Diagnose::Write("len1:%d u_curdir:%s!\n", Len,path);
-		path[Len]='/';
-		Len++;
+		if(Len != 1)
+			path[Len++]='/';
 		// Diagnose::Write("len2:%d u_curdir:%s!\n", Len,path);
 		Utility::StringCopy(UDirp,path+Len);
 	}
@@ -114,8 +114,8 @@ void FileManager::Creat()
 		Utility::StringCopy(u.u_curdir,path);
 		int Len=Utility::StringLength(u.u_curdir);
 		// Diagnose::Write("len1:%d u_curdir:%s!\n", Len,path);
-		path[Len]='/';
-		Len++;
+		if(Len != 1)
+			path[Len++]='/';
 		// Diagnose::Write("len2:%d u_curdir:%s!\n", Len,path);
 		Utility::StringCopy(UDirp,path+Len);
 	}

@@ -132,15 +132,20 @@ int write(int fd, char* buf, int nbytes)
 	// printf("IN WRITE, AFTER MYGETFILENAME!!!!%s \n",metalog.filename);
 	///////
 
+	int startpos, endpos;
+	startpos = datafile_state.st_size;
 	// write datafile
-//	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(datafile),"c"(buf),"d"(nbytes));
-//	if(res < 0)
-//	{
-//		close(metafile);
-//		close(datafile);
-//		return -1;
-//	}
-	int endpos = startpos + res;
+	char *buf_backup = buf;
+	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(datafile),"c"(buf_backup),"d"(nbytes));
+//	printf("DEBUG!!! 1");
+	if(res < 0)
+	{
+		close(metafile);
+		close(datafile);
+		return -1;
+	}
+//	printf("DEBUG!!! 2");
+	endpos = startpos + res;
 	// write data into datafile
 
 	metalog.start = START;
@@ -150,25 +155,29 @@ int write(int fd, char* buf, int nbytes)
 	metalog.startpos = startpos;
 	metalog.endpos = endpos;
 
-	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog)));
-//	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog) - sizeof(int)));
+//	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog)));
+	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog) - sizeof(int)));
+//	printf("DEBUG!!! 3");
 	if(res < 0)
 	{
 		close(metafile);
 		close(datafile);
 		return -1;
 	}
-
+//	printf("DEBUG!!! 4");
 	// checkpointing
 	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(fd),"c"(buf),"d"(nbytes));
+//	printf("DEBUG!!! 5");
 	if ( res >= 0 )
 	{
+		int chk_res;
 		// ¼Ó¼ì²éµã
-//		__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)(&metalog) + (sizeof(struct MetaLog) - sizeof(int))),"d"(sizeof(int)));
+		__asm__ __volatile__ ("int $0x80":"=a"(chk_res):"a"(4),"b"(metafile),"c"((char*)(&metalog) + (sizeof(struct MetaLog) - sizeof(int))),"d"(sizeof(int)));
 		close(metafile);
 		close(datafile);
 		return res;
 	}
+//	printf("DEBUG!!! 6");
 	close(metafile);
 	close(datafile);
 	return -1;
