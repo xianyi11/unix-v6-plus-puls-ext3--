@@ -413,6 +413,7 @@ int link(char* pathname,char* newPathname)
 	if ( res >= 0 )
 	{
 		// checkpoint
+
 		int chk_res;
 		__asm__ __volatile__ ("int $0x80":"=a"(chk_res):"a"(4),"b"(metafile),"c"((char*)(&metalog) + (sizeof(struct MetaLog) - sizeof(int))),"d"(sizeof(int)));
 		close(metafile);
