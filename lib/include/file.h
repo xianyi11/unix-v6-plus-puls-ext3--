@@ -1,6 +1,5 @@
 #ifndef FILE_H
 #define FILE_H
-
 struct st_inode
 {
 	unsigned int st_mode;	/* 状态的标志位 */
