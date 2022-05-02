@@ -118,6 +118,13 @@ extern "C" void runtime()
   */
 extern "C" void ExecShell()
 {
+	// test creat
+	// int res=-1;
+	// char* path="/CheckLog.txt";
+	// int mode=0x1ff;
+	// // Diagnose::Write("res=%d",res);
+	// __asm__ __volatile__ ( "int $0x80":"=a"(res):"a"(8),"b"(path),"c"(mode));
+	// Diagnose::Write("res=%d",res);
 	int argc = 0;
 	char* argv = NULL;
 	char* pathname = "/Shell.exe";
