@@ -64,10 +64,15 @@ int read(int fd, char* buf, int nbytes)
 }
 int MyGetFileName(int fd, char* buf)
 {
+	printf("MYGETFILENAME!!!!!!BEFORE\n");
 	int res;
 	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(49),"b"(fd),"c"(buf));
+	printf("MYGETFILENAME!!!!!!AFTER\n");
 	if ( res >= 0 )
+	{
+		printf("RES!!!!Buf: %s\n", buf);
 		return res;
+	}
 	return -1;
 }
 
@@ -98,20 +103,35 @@ int write(int fd, char* buf, int nbytes)
 		metafile = open("/meta.log", 0x3);
 	}
 	// seek metafile
-	seek(metafile, 0, 2); // move file ptr to end of file
+	struct st_inode metafile_state;
+	fstat(metafile, &metafile_state);
+	seek(metafile, metafile_state.st_size, 0); // move file ptr to end of file
+
 	int datafile = open("/data.log", 0x3);
 	if(datafile == -1)
 	{
 		creat("/data.log", 0x1ff);
 		datafile = open("/data.log", 0x3);
 	}
-	// seek datafile
-	seek(datafile, 0, 2);
-
-	// write datafile
 	struct st_inode datafile_state;
 	fstat(datafile, &datafile_state);
-	int startpos = datafile_state.st_size;
+	seek(datafile, datafile_state.st_size, 0);
+
+	struct MetaLog metalog;
+
+	///////
+	printf("IN WRITE, BEFORE MYGETFILENAME!!!!\n");
+	MyGetFileName(fd, metalog.filename);
+	printf("IN WRITE, AFTER MYGETFILENAME!!!!\n");
+	sprintf(metalog.start, "STTT");
+	sprintf(metalog.operation, "writewritewritee");
+	sprintf(metalog.end, "ENDD");
+	sprintf(metalog.checkpoint, "CHKK");
+	sprintf(metalog.startpos, "%d", datafile_state.st_size);
+	sprintf(metalog.endpos, "%d", datafile_state.st_size + nbytes); //////////
+	///////
+
+	// write datafile
 //	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(datafile),"c"(buf),"d"(nbytes));
 //	if(res < 0)
 //	{
@@ -119,15 +139,13 @@ int write(int fd, char* buf, int nbytes)
 //		close(datafile);
 //		return -1;
 //	}
-	int endpos = startpos + res;
+//	int endpos = startpos + res;
 	// write data into datafile
 
-	struct MetaLog metalog;
 //	metalog.start = START;
 //	metalog.end = END;
 //	metalog.checkpoint = CHECKPOINT;
 //	MyGetFileName(fd, metalog.filename);
-	sprintf(metalog.operation, "write");
 //	metalog.startpos = startpos;
 //	metalog.endpos = endpos;
 

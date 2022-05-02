@@ -3,12 +3,18 @@
 
 struct MetaLog
 {
-    //int start;            // 定义一个特殊的START，1296744718 4
-    //char filename[128];   // 128
+//    int start;            // 定义一个特殊的START，1296744718 4
+	char start[4];
+//    char filename[128];   // 128
+	char filename[16];
     char operation[16];   // write, creat, unlink, link 10
     //int startpos, endpos; // [startpos, endpos) // -1, -1 8
+    char startpos[8];
+    char endpos[8];
     //int end;              // 定义一个特殊的END，1437806543 4
     //int checkpoint;       // 317668571 4
+    char end[4];
+    char checkpoint[4];
 }__attribute__ ((__packed__));
 
 struct st_inode
