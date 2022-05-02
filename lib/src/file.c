@@ -15,9 +15,15 @@ mode：创建模式，需指定文件主，同组用户，其他用户的工作方式
 int creat(char* pathname, unsigned int mode)
 {
 	int res;
+	// first part
+
+
 	__asm__ __volatile__ ( "int $0x80":"=a"(res):"a"(8),"b"(pathname),"c"(mode));
 	if ( res >= 0 )
+	{
+		// checkpoint
 		return res;
+	}
 	return -1;
 }
 
@@ -151,9 +157,11 @@ int write(int fd, char* buf, int nbytes)
 	metalog.start = START;
 	metalog.end = END;
 	metalog.checkpoint = CHECKPOINT;
-	MyGetFileName(fd, metalog.filename);
+	MyGetFileName(fd, metalog.filename1);
+	metalog.filename2[0] = '\0';
 	metalog.startpos = startpos;
 	metalog.endpos = endpos;
+	metalog.mode = 0;
 
 //	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog)));
 	__asm__ __volatile__ ("int $0x80":"=a"(res):"a"(4),"b"(metafile),"c"((char*)&metalog),"d"(sizeof(struct MetaLog) - sizeof(int)));

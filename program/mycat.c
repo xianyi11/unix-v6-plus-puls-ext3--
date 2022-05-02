@@ -8,7 +8,7 @@ void usage()
 
 void main1(int argc, char **argv)
 {
-	if(argc != 2)
+	if(argc != 3)
 	{
 		usage();
 		return;
@@ -30,6 +30,6 @@ void main1(int argc, char **argv)
 	}
 	seek(fd, cnt * sizeof(struct MetaLog), 0);
 	read(fd, (char*)&metalog, sizeof(struct MetaLog));
-	printf("start: %d\nfilename: %s\noperation: %s\nstartpos: %d\nendpos: %d\nend: %d\ncheckpoint: %d\n",
-			metalog.start, metalog.filename, metalog.operation, metalog.startpos, metalog.endpos, metalog.end, metalog.checkpoint);
+	printf("start: %d\nfilename1: %s\nfilename2: %s\noperation: %s\nstartpos: %d\nendpos: %d\nmode: %d\nend: %d\ncheckpoint: %d\n",
+			metalog.start, metalog.filename1, metalog.filename2, metalog.operation, metalog.startpos, metalog.endpos, metalog.mode, metalog.end, metalog.checkpoint);
 }
