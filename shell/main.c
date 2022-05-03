@@ -18,6 +18,7 @@ void CheckAndRecovery()
 	printf("entering CheckAndRecovery......\n");
 	int metalogfd=open("/meta.log",0x3);
 	if(metalogfd<0){
+		printf("/meta.log does not exsit ! leaving CheckAndRecovery......\n");
 		return;
 	}
 	struct st_inode st;
@@ -27,6 +28,7 @@ void CheckAndRecovery()
 	if(remainder!=0){
 		if(remainder<sizeof(struct MetaLog)-sizeof(int)){
 			//日志未写完
+			printf("the log in /meta.log is not enough to recover ......\n");
 			;//pass
 		}
 		else if(remainder>=sizeof(struct MetaLog)-sizeof(int)){
@@ -40,7 +42,7 @@ void CheckAndRecovery()
 			if(strcmp( "write", metalog.operation )==0){
 				int DataLen = metalog.endpos - metalog.startpos;//获得长度
 //				char *buf = (char *)malloc(DataLen + 5);//? ///////////////
-				char buf[128];
+				char buf[512];
 				int datalogfd = open("/data.log",0x3);
 				seek(datalogfd,metalog.startpos,0);
 				read(datalogfd,buf,DataLen);

@@ -3,7 +3,7 @@
 
 void usage()
 {
-     printf("Usage: /bin/mycat filename number\n");
+     printf("Usage: mycat filename number\n");
 }
 
 void main1(int argc, char **argv)
